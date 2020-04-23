@@ -27,5 +27,6 @@ class App: Callable<Int> {
             .let { 0 }
 }
 
+@Suppress("ReplaceJavaStaticMethodWithKotlinAnalog")
 fun main(args: Array<String>) =
     System.exit(CommandLine(App()).execute(*args))
