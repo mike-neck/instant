@@ -13,15 +13,6 @@ repositories {
 group = 'org.mikeneck.instant'
 version = '0'
 
-nativeImage {
-    graalVmHome = "${System.getProperty('java.home')}"
-    mainClass = application.mainClassName
-    executableName = 'instant'
-    arguments(
-            '--no-fallback'
-    )
-}
-
 dependencies {
     kapt 'info.picocli:picocli-codegen:4.2.0'
 
@@ -52,4 +43,13 @@ task showCommand(dependsOn: 'appCopy', group: 'application') {
     doLast {
         println("java -cp ${project.fileTree("$buildDir/jars").asPath} ${application.mainClassName}")
     }
+}
+
+nativeImage {
+    graalVmHome = "${System.getProperty('java.home')}"
+    mainClass = application.mainClassName
+    executableName = 'instant'
+    arguments(
+            '--no-fallback'
+    )
 }
