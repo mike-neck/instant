@@ -19,7 +19,7 @@ jobs:
       -
         name: project version
         id: projectVersion
-        run: echo "::set-output name=version::$REF"
+        run: echo "::set-output name=version::`echo $REF | tr '/' ' ' | awk '{print $3}'`"
 
       -
         name: show output of version
