@@ -8,6 +8,7 @@ import run.ktcheck.Given
 import run.ktcheck.KtCheck
 import run.ktcheck.assertion.NoDep.should
 import run.ktcheck.assertion.NoDep.shouldBe
+import run.ktcheck.assertion.NoDep.shouldNotBe
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalTime
@@ -102,6 +103,20 @@ by Given(
     .When("run it without param", { commandLine -> 
       commandLine.execute()
     })
-    .Then("results time will be printed and results 0", { _, exit ->
+    .Then("results 0", { _, exit ->
       exit shouldBe 0
+    })
+
+    .When("run it without unknown param", { commandLine -> 
+      commandLine.execute("--unknown-option=foo")
+    })
+    .Then("results 2", { _, exit ->
+      exit shouldBe 2
+    })
+
+    .When("run it with invalid param", { commandLine -> 
+      commandLine.execute("--format=<unrecognized-format>")
+    })
+    .Then("results 1", { _, exit ->
+      exit shouldBe 1
     })
