@@ -7,6 +7,13 @@ import run.ktcheck.KtCheck
 import run.ktcheck.assertion.Matcher
 import run.ktcheck.assertion.MatcherSupport
 import run.ktcheck.assertion.NoDep.should
+import run.ktcheck.assertion.NoDep.shouldBe
+import java.time.Clock
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 object EitherAssert {
   fun <L : Any, R : Any> beRight(): Matcher<Either<L, R>> =
@@ -55,4 +62,17 @@ by Given("Create App with `instant -f 'foo-bar-baz'`", {
       app.formatter()
     }).Then("it should be Left", { _, either ->
       either should beLeft<String, Formatter>()
+    })
+
+object AppNowTest : KtCheck
+by Given(
+    description = "Create App with fixed Instant Clock",
+    before = { OffsetDateTime.of(
+        LocalDate.of(2020, 1, 2),
+        LocalTime.of(15, 4), ZoneOffset.UTC) },
+    action = { App(Clock.fixed(this.toInstant(), ZoneId.of("UTC"))) }
+)
+    .When("call now()", { app -> app.now() })
+    .Then("it is the same offsetDateTime as the context", { _, offsetDateTime ->
+      offsetDateTime shouldBe this
     })
