@@ -17,7 +17,8 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
         "Specifies output format. available values are 'unix' or DateTimeFormatter pattern. default: \${DEFAULT-VALUE}"])
   var format: String = "uuuu-MM-dd'T'hh:mm:ss.nX"
 
-  fun formatter(): Either<String, Formatter> =
+  @Suppress("RemoveExplicitTypeArguments")
+  internal fun formatter(): Either<String, Formatter> =
       when (format.toLowerCase()) {
         "unix" -> Either.right { dateTime: OffsetDateTime -> "${dateTime.toInstant().toEpochMilli()}" }
         else -> runCatching {
