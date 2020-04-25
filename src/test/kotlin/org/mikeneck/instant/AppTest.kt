@@ -34,4 +34,15 @@ by Given("Create App with 'instant -f unix'", { App.ofUnix() })
       either should beRight<String, Formatter>()
     })
 
+@Suppress("RemoveExplicitTypeArguments")
+object AppFormatterValidFormatTest : KtCheck
+by Given("Create App with `instant -f 'uuuu/MM/dd hh:mm:ss.nX'`", { 
+  App.withFormat("uuuu/MM/dd hh:mm:ss.nX") 
+})
+    .When("call `formatter()`", { app ->
+      app.formatter()
+    })
+    .Then("it should be Right", { _, either: Either<String, Formatter> ->
+      either should beRight<String, Formatter>()
+    })
 

@@ -13,6 +13,8 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
 
   companion object {
     internal fun ofUnix(): App = App().apply { format = "unix" }
+
+    internal fun withFormat(format: String): App = App().apply { this.format = format }
   }
 
   @CommandLine.Option(
