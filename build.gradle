@@ -27,6 +27,10 @@ application {
     mainClassName = 'org.mikeneck.instant.AppKt'
 }
 
+test {
+    useJUnitPlatform()
+}
+
 kapt {
     arguments {
         arg("project", "${project.group}/${project.name}")

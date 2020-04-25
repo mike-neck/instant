@@ -11,6 +11,10 @@ typealias Formatter = (OffsetDateTime) -> String
 @CommandLine.Command(name = "instant", mixinStandardHelpOptions = true, version = ["0"])
 class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
 
+  companion object {
+    internal fun ofUnix(): App = App().apply { format = "unix" }
+  }
+
   @CommandLine.Option(
       names = ["-f", "--format"],
       description = [
