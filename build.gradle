@@ -57,3 +57,11 @@ nativeImage {
             '--no-fallback'
     )
 }
+
+task zipNativeImage(type: Zip, dependsOn: "nativeImage", group: 'release') {
+    def runOs = System.getenv('RUNNING_OS')
+    def destinationDirName = runOs == null? "${project.name}": "${project.name}-$runOs"
+    from(tasks.nativeImage)
+    destinationDir(file("$buildDir/release"))
+    archiveName("$destinationDirName-${project.version}.zip")
+}
