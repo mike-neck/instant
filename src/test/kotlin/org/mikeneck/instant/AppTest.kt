@@ -1,5 +1,6 @@
 package org.mikeneck.instant
 
+import org.mikeneck.instant.EitherAssert.beLeft
 import org.mikeneck.instant.EitherAssert.beRight
 import run.ktcheck.Given
 import run.ktcheck.KtCheck
@@ -30,7 +31,7 @@ by Given("Create App with 'instant -f unix'", { App.ofUnix() })
     .When("call 'formatter()'", { app ->
       app.formatter()
     })
-    .Then("it should be Right", { _, either: Either<String, Formatter> ->
+    .Then("it should be Right", { _, either ->
       either should beRight<String, Formatter>()
     })
 
@@ -42,7 +43,16 @@ by Given("Create App with `instant -f 'uuuu/MM/dd hh:mm:ss.nX'`", {
     .When("call `formatter()`", { app ->
       app.formatter()
     })
-    .Then("it should be Right", { _, either: Either<String, Formatter> ->
+    .Then("it should be Right", { _, either ->
       either should beRight<String, Formatter>()
     })
 
+object AppFormatterInvalidFormatTest : KtCheck
+by Given("Create App with `instant -f 'foo-bar-baz'`", {
+  App.withFormat("foo-bar-baz")
+})
+    .When("call `formatter()`", { app -> 
+      app.formatter()
+    }).Then("it should be Left", { _, either ->
+      either should beLeft<String, Formatter>()
+    })
