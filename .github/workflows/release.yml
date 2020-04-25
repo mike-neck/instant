@@ -1,0 +1,28 @@
+name: release
+
+on:
+  push:
+#    tags:
+#      - "v*"
+    branch:
+      - "feature/release"
+
+jobs:
+
+  create-release:
+    name: create release
+    runs-on: ubuntu-18.04
+    env:
+      REF: ${{ github.ref }}
+
+    steps:
+      -
+        name: project version
+        id: projectVersion
+        run: echo "::set-output name=version::$REF"
+
+      -
+        name: show output of version
+        run: echo "$PROJECT_VERSION"
+        env:
+          PROJECT_VERSION: ${{ steps.projectVersion.outputs.version }}
