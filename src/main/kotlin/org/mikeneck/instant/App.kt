@@ -1,30 +1,53 @@
 package org.mikeneck.instant
 
 import picocli.CommandLine
-import java.io.File
-import java.math.BigInteger
-import java.nio.file.Files
-import java.security.MessageDigest
+import java.time.Clock
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.*
 
-@CommandLine.Command(name = "checksum", mixinStandardHelpOptions = true, version = ["0.0"])
-class App: Callable<Int> {
+typealias Formatter = (OffsetDateTime) -> String
 
-    @CommandLine.Option(names = ["-a", "--algorithm"], description = ["MD5 SHA-1, SHA-256"])
-    var algorithm: String = "MD5"
+@CommandLine.Command(name = "instant", mixinStandardHelpOptions = true, version = ["0"])
+class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
 
-    @CommandLine.Parameters(index = "0", description = ["target file"])
-    lateinit var file: File
+  @CommandLine.Option(
+      names = ["-f", "--format"],
+      description = [
+        "Specifies output format. available values are 'unix' or DateTimeFormatter pattern. default: \${DEFAULT-VALUE}"])
+  var format: String = "uuuu-MM-dd'T'hh:mm:ss.nX"
 
-    override fun call(): Int =
-        file.toPath()
-            .let { Files.readAllBytes(it) }
-            .let { it to MessageDigest.getInstance(algorithm) }
-            .let { it.second.digest(it.first) }
-            .let { "%0${it.size * 2}x" to BigInteger(1, it) }
-            .let { it.first.format(it.second) }
-            .let { println(it) }
-            .let { 0 }
+  fun formatter(): Either<String, Formatter> =
+      when (format.toLowerCase()) {
+        "unix" -> Either.right { dateTime: OffsetDateTime -> "${dateTime.toInstant().toEpochMilli()}" }
+        else -> runCatching {
+          DateTimeFormatter.ofPattern(format)
+        }.fold(
+            onSuccess = { formatter ->
+              Either.right<String, Formatter> { dateTime: OffsetDateTime -> dateTime.format(formatter) }
+            },
+            onFailure = { Either.left("${it.message}") }
+        )
+      }
+
+  internal fun now() = OffsetDateTime.now(clock)
+
+  internal fun showTime(formatter: Formatter): Either<String, String> =
+      runCatching {
+        formatter(now())
+      }.fold(
+          onSuccess = { Either.right(it) },
+          onFailure = { Either.left("${it.message}") }
+      )
+
+  internal fun runProcess(): Pair<Int, String> =
+      formatter()
+          .flatMap { showTime(it) }
+          .map { 0 to it }
+          .rescue { message -> 1 to message }
+
+  override fun call(): Int =
+      runProcess().apply { println(this.second) }.first
 }
 
 @Suppress("ReplaceJavaStaticMethodWithKotlinAnalog")
