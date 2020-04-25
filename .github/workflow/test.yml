@@ -1,0 +1,43 @@
+name: test
+
+on:
+  push:
+    branch:
+      - master
+      - "feature/*"
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-18.04
+
+    steps:
+      -
+        name: check out
+        uses: actions/checkout@v1
+
+      -
+        name: setup Java
+        uses: actions/setup-java@v1.3.0
+        with:
+          java-version: '11'
+
+      -
+        name: cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ hashFiles('build.gradle') }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      -
+        name: test
+        run: ./gradlew test
+
+      -
+        name: export report
+        uses: actions/upload-artifact@v1
+        if: always()
+        with:
+          name: test-report
+          path: build/reports/tests/test
