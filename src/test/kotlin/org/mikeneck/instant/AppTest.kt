@@ -3,6 +3,7 @@ package org.mikeneck.instant
 import org.mikeneck.instant.EitherAssert.beLeft
 import org.mikeneck.instant.EitherAssert.beLeftContaining
 import org.mikeneck.instant.EitherAssert.beRight
+import picocli.CommandLine
 import run.ktcheck.Given
 import run.ktcheck.KtCheck
 import run.ktcheck.assertion.NoDep.should
@@ -88,4 +89,19 @@ by Given(
     })
     .Then("it should be Left with message containing 'Unable to extract ZoneId'", { _, either ->
       either should beLeftContaining("Unable to extract ZoneId")
+    })
+
+object AppTest : KtCheck
+by Given(
+    description = "Create CommandLine with fixed Instant Clock",
+    before = { OffsetDateTime.of(
+        LocalDate.of(2020, 1, 2),
+        LocalTime.of(15, 4), ZoneOffset.UTC) },
+    action = { CommandLine(App(Clock.fixed(this.toInstant(), ZoneId.of("UTC")))) }
+)
+    .When("run it without param", { commandLine -> 
+      commandLine.execute()
+    })
+    .Then("results time will be printed and results 0", { _, exit ->
+      exit shouldBe 0
     })
