@@ -8,7 +8,16 @@ import java.util.concurrent.*
 
 typealias Formatter = (OffsetDateTime) -> String
 
-@CommandLine.Command(name = "instant", mixinStandardHelpOptions = true, version = ["0"])
+@CommandLine.Command(
+    name = "instant", 
+    mixinStandardHelpOptions = true,
+    resourceBundle = "AppVersion",
+    version = [
+    "instant version \${bundle:app.version:-SNAPSHOT}",
+    "Build OS: \${os.name}, \${os.version}, \${os.arch}",
+    "With JVM: \${java.version}(\${java.vendor} \${java.vm.name} \${java.vm.version})",
+    "Powered by Picocli ${CommandLine.VERSION}"
+    ])
 class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
 
   companion object {

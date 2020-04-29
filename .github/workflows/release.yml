@@ -1,0 +1,110 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+
+  create-release:
+    name: create release
+    runs-on: ubuntu-18.04
+    env:
+      REF: ${{ github.ref }}
+
+    steps:
+      - name: project version
+        id: projectVersion
+        run: echo "::set-output name=version::`echo $REF | tr '/' ' ' | awk '{print $3}'`"
+
+      - name: create release
+        id: release
+        uses: actions/create-release@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.projectVersion.outputs.version }}
+          release_name: Release ${{ steps.projectVersion.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: file release url
+        run: |
+          echo "$PROJECT_VERSION" >> release.txt
+          echo "$RELEASE_ID" >> release.txt
+          echo "$RELEASE_URL" >> release.txt
+        env:
+          PROJECT_VERSION: ${{ steps.projectVersion.outputs.version }}
+          RELEASE_URL: ${{ steps.release.outputs.upload_url }}
+          RELEASE_ID: ${{ steps.release.outputs.id }}
+
+      - name: store release url
+        uses: actions/upload-artifact@v1
+        with:
+          name: release
+          path: release.txt
+
+  upload-release:
+    name: (${{ matrix.os }}) upload release
+    needs: create-release
+    strategy:
+      matrix:
+        os: [macos, ubuntu]
+    runs-on:  ${{ matrix.os }}-latest
+
+    steps:
+      -
+        name: checkout
+        uses: actions/checkout@v1
+
+      -
+        name: setup GraalVM
+        uses: DeLaGuardo/setup-graalvm@2.0
+        with:
+          graalvm-version: "20.0.0.java11"
+
+      -
+        name: install native-image
+        run: gu install native-image
+
+      -
+        name: download release url
+        uses: actions/download-artifact@v1
+        with:
+          name: release
+
+      -
+        name: configure release url
+        id: config
+        run: |
+          version=`head -n 1 release/release.txt`
+          url=`tail -n 1 release/release.txt`
+          echo "::set-output name=projectVersion::${version}"
+          echo "::set-output name=releaseUrl::${url}"
+
+      -
+        name: cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ hashFiles('build.gradle') }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      -
+        name: "build application version: ${{ steps.config.outputs.projectVersion }}"
+        run: ./gradlew zipNativeImage
+        env:
+         RUNNING_OS: ${{ matrix.os }}
+         PROJECT_VERSION: ${{ steps.config.outputs.projectVersion }}
+
+      -
+        name: "upload release for ${{ matrix.os }}, version: ${{ steps.config.outputs.projectVersion }}"
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.config.outputs.releaseUrl }}
+          asset_path: ./build/release/instant-${{ matrix.os }}-${{ steps.config.outputs.projectVersion }}.zip
+          asset_name: instant-${{ matrix.os }}.zip
+          asset_content_type: application/zip

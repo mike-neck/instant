@@ -5,13 +5,19 @@ plugins {
     id 'org.mikeneck.graalvm-native-image' version '0.3.0'
 }
 
+ext {
+    projectVersion = System.getenv('PROJECT_VERSION') == null?
+            '0':
+            "${System.getenv('PROJECT_VERSION')}"
+}
+
 repositories {
     mavenCentral()
     jcenter()
 }
 
 group = 'org.mikeneck.instant'
-version = '0'
+version = projectVersion
 
 dependencies {
     kapt 'info.picocli:picocli-codegen:4.2.0'
@@ -37,6 +43,19 @@ kapt {
     }
 }
 
+task generateResource(group: 'build') {
+    def outputDir = tasks.processResources.destinationDir
+    def resourceFile = file("$outputDir/AppVersion.properties")
+    outputs.file(resourceFile)
+    doLast {
+        resourceFile.write("""|#application version
+           |app.version=${projectVersion}
+           |""".stripMargin())
+    }
+}
+
+tasks.processResources.finalizedBy("generateResource")
+
 task appCopy(type: Copy, group: 'build') {
     from configurations.runtimeClasspath.asFileTree
     from jar
@@ -56,4 +75,12 @@ nativeImage {
     arguments(
             '--no-fallback'
     )
+}
+
+task zipNativeImage(type: Zip, dependsOn: "nativeImage", group: 'release') {
+    def runOs = System.getenv('RUNNING_OS')
+    def destinationDirName = runOs == null? "${project.name}": "${project.name}-$runOs"
+    from(tasks.nativeImage)
+    destinationDir(file("$buildDir/release"))
+    archiveName("$destinationDirName-${project.version}.zip")
 }
