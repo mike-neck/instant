@@ -23,5 +23,5 @@ git commit --allow-empty -m "release/${level}"
 
 gh pr create \
   --base master \
-  --title "release/${branch_name}" \
-  --body "release/${branch_name}" 
+  --title "release/${level}" \
+  --body "release/${level}" 
