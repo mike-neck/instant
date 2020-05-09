@@ -92,34 +92,13 @@ by Given(
       offsetDateTime shouldBe this
     })
 
-object AppShowTimeTest : KtCheck
-by Given(
-    description = "Create App with fixed Instant Clock",
-    before = { OffsetDateTime.of(
-        LocalDate.of(2020, 1, 2),
-        LocalTime.of(15, 4), ZoneOffset.UTC) },
-    action = { App(Clock.fixed(this.toInstant(), ZoneId.of("UTC"))) } 
-)
-    .When("call showTime with unix like formatter", { app -> 
-      app.showTime { "${it.toInstant().toEpochMilli()}" }
-    })
-    .Then("it should Right of integral string", { _, either ->
-      either should beRight("${this.toInstant().toEpochMilli()}")
-    })
-
-    .When("call showTime with dateTimeFormatter", { app ->
-      app.showTime { DateTimeFormatter.ISO_OFFSET_DATE.format(it) }
-    })
-    .Then("it should be Right of 2020-01-02Z", { _, either ->
-      either should beRight("2020-01-02Z")
-    })
-
-    .When("call showTime with unavailable pattern", { app ->
-      app.showTime { DateTimeFormatter.ofPattern("z").format(it) }
-    })
-    .Then("it should be Left with message containing 'Unable to extract ZoneId'", { _, either ->
-      either should beLeftContaining("Unable to extract ZoneId")
-    })
+private fun formatter(f: (OffsetDateTime) -> String): Formatter = { offsetDateTime -> 
+  runCatching { f(offsetDateTime) }
+      .fold(
+          onSuccess = { Either.right(it) },
+          onFailure = { Either.left("${it.message}") }
+      )
+}
 
 object AppTest : KtCheck
 by Given(

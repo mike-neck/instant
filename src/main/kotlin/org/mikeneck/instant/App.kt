@@ -7,7 +7,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.*
 
-typealias Formatter = (OffsetDateTime) -> String
+typealias Formatter = (OffsetDateTime) -> Either<String, String>
 
 @CommandLine.Command(
     name = "instant", 
@@ -27,6 +27,16 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
     internal fun withFormat(format: String): App = App().apply { this.format = format }
 
     internal fun App.withDuration(duration: String): App = this.apply { this.duration = duration }
+
+    internal fun <L: Any, R: Any, N: Any> Either<L, (R) -> Either<L, N>>.flatten(): (R) -> Either<L, N> =
+        { right: R -> this.flatMap { mapping -> mapping(right) } }
+
+    internal operator fun <L: Any, R: Any, M: Any, N: Any> Either<L, (R) -> Either<L, M>>.plus(next: Either<L, (M) -> Either<L, N>> ): Either<L, (R) -> Either<L, N>> =
+        this.flatMap { function: (R) -> Either<L, M> -> 
+          next.map { nextFunction: (M) -> Either<L, N> ->
+            { right: R -> function(right).flatMap(nextFunction) }
+          }
+        }
   }
 
   @CommandLine.Option(
@@ -38,12 +48,18 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
   @Suppress("RemoveExplicitTypeArguments")
   internal fun formatter(): Either<String, Formatter> =
       when (format.toLowerCase()) {
-        "unix" -> Either.right { dateTime: OffsetDateTime -> "${dateTime.toInstant().toEpochMilli()}" }
+        "unix" -> Either.right { dateTime: OffsetDateTime ->
+          Either.right<String, String>("${dateTime.toInstant().toEpochMilli()}") }
         else -> runCatching {
           DateTimeFormatter.ofPattern(format)
         }.fold(
             onSuccess = { formatter ->
-              Either.right<String, Formatter> { dateTime: OffsetDateTime -> dateTime.format(formatter) }
+              Either.right<String, Formatter> { dateTime: OffsetDateTime ->
+                runCatching { dateTime.format(formatter) }
+                    .fold(
+                        onSuccess = { Either.right(it) },
+                        onFailure = { Either.left("${it.message}") }
+                    )}
             },
             onFailure = { Either.left("${it.message}") }
         )
@@ -64,6 +80,7 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
   )
   var duration: String = ""
 
+  @Suppress("RemoveExplicitTypeArguments")
   internal fun duration(): Either<String, Duration> =
       if (duration.isEmpty()) Either.right(Duration.ZERO)
       else runCatching { Duration.parse(duration) }
@@ -72,19 +89,18 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
               onFailure = { Either.left("${it.message}: $duration") }
           )
 
+  @Suppress("RemoveExplicitTypeArguments")
+  private val Either<String, Duration>.mapper: Either<String, (OffsetDateTime) -> Either<String, OffsetDateTime>> get() =
+    this.map { duration -> { offsetDateTime: OffsetDateTime -> 
+      Either.right<String, OffsetDateTime>(offsetDateTime + duration) } }
+
+  private val composedFunction: (OffsetDateTime) -> Either<String, String> get() =
+      (duration().mapper + formatter()).flatten()
+
   internal fun now() = OffsetDateTime.now(clock)
 
-  internal fun showTime(formatter: Formatter): Either<String, String> =
-      runCatching {
-        formatter(now())
-      }.fold(
-          onSuccess = { Either.right(it) },
-          onFailure = { Either.left("${it.message}") }
-      )
-
   internal fun runProcess(): Pair<Int, String> =
-      formatter()
-          .flatMap { showTime(it) }
+      composedFunction(now())
           .map { 0 to it }
           .rescue { message -> 1 to message }
 
