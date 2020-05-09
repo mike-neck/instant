@@ -116,17 +116,17 @@ jobs:
 
     steps:
       -
-        name: download release url
-        uses: actions/download-artifact@v1
-        with:
-          name: release
-
-      -
-        name: get artifact id
+        name: get artifacts id
         id: artifactId
         run: |
-          id=$(head -n 2 release/release.txt | tail -n 1)
+          id=$(
+            curl -H "Authorization: token ${TOKEN}" "https://api.github.com/repos/mike-neck/instant/actions/runs/${RUN_ID}/artifacts" |
+              jq -r '[.artifacts[]] | map(select( .["name"] == "release")) | .[].id' |
+              head -n 1)
           echo "::set-output name=value::${id}"
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
 
       -
         name: delete artifact
