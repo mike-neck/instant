@@ -108,3 +108,32 @@ jobs:
           asset_path: ./build/release/instant-${{ matrix.os }}-${{ steps.config.outputs.projectVersion }}.zip
           asset_name: instant-${{ matrix.os }}.zip
           asset_content_type: application/zip
+
+  delete-artifact:
+    name: delete artifact
+    needs: upload-release
+    runs-on: ubuntu-18.04
+
+    steps:
+      -
+        name: download release url
+        uses: actions/download-artifact@v1
+        with:
+          name: release
+
+      -
+        name: get artifact id
+        id: artifactId
+        run: |
+          id=$(head -n 2 release/release.txt | tail -n 1)
+          echo "::set-output name=value::${id}"
+
+      -
+        name: delete artifact
+        run: |
+          curl -X DELETE \
+            -H "Authorization: token ${TOKEN}" \
+            "https://api.github.com/repos/mike-neck/instant/actions/artifacts/${ARTIFACT_ID}"
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_ID: ${{ steps.artifactId.outputs.value }}
