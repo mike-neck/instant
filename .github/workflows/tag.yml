@@ -11,6 +11,12 @@ jobs:
 
     steps:
       -
+        name: show event
+        run: echo "${EVENT}"
+        env:
+          EVENT: ${{ toJson(github.event) }}
+
+      -
         name: checkout
         uses: actions/checkout@v2
 
