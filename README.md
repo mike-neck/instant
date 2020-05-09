@@ -22,4 +22,7 @@ $ instant -t 03:04:05
 
 $ instant -f "uuuu/MM/dd hh:mm:ssZ"
 2006/01/02 15:04:05+00:00
+
+$ instant -a PT30M
+2006-01-02T15:34:05.600Z
 ```

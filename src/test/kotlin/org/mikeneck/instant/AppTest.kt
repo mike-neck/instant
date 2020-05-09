@@ -1,5 +1,6 @@
 package org.mikeneck.instant
 
+import org.mikeneck.instant.App.Companion.withDuration
 import org.mikeneck.instant.EitherAssert.beLeft
 import org.mikeneck.instant.EitherAssert.beLeftContaining
 import org.mikeneck.instant.EitherAssert.beRight
@@ -10,6 +11,7 @@ import run.ktcheck.assertion.NoDep.should
 import run.ktcheck.assertion.NoDep.shouldBe
 import run.ktcheck.assertion.NoDep.shouldNotBe
 import java.time.Clock
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.OffsetDateTime
@@ -48,6 +50,33 @@ by Given("Create App with `instant -f 'foo-bar-baz'`", {
       app.formatter()
     }).Then("it should be Left", { _, either ->
       either should beLeft<String, Formatter>()
+    })
+
+@Suppress("RemoveExplicitTypeArguments")
+object DurationInvalidFormatTest: KtCheck
+by Given(
+    "invalid format('P-1H30M') is given",
+    { App().withDuration("P-1H30M") })
+    .When("call `duration()`", { app ->
+      app.duration()
+    }).Then("it should be Left", { _, either ->
+      either should beLeft<String, Duration>()
+    })
+
+object DurationWithoutInputTest: KtCheck
+by Given("without --add option", { App() })
+    .When("call `duration()`", { app ->
+      app.duration()
+    })
+    .Then("it should be Right with zero duration", {  _, either ->
+      either should beRight(Duration.ZERO)
+    })
+
+object DurationWithValidFormatTest: KtCheck
+by Given("valid format duration(P1DT-12H)", { App().withDuration("P1DT-12H") })
+    .When("call `duration()`", { app -> app.duration() })
+    .Then("it should be Right with 12 hours", { _, either ->
+      either should beRight(Duration.ofHours(12))
     })
 
 object AppNowTest : KtCheck

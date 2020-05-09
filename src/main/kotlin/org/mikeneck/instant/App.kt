@@ -2,6 +2,7 @@ package org.mikeneck.instant
 
 import picocli.CommandLine
 import java.time.Clock
+import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.*
@@ -24,12 +25,14 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
     internal fun ofUnix(): App = App().apply { format = "unix" }
 
     internal fun withFormat(format: String): App = App().apply { this.format = format }
+
+    internal fun App.withDuration(duration: String): App = this.apply { this.duration = duration }
   }
 
   @CommandLine.Option(
       names = ["-f", "--format"],
       description = [
-        "Specifies output format. available values are 'unix' or DateTimeFormatter pattern. default: \${DEFAULT-VALUE}"])
+        "Specifies output format. Available values are 'unix' or DateTimeFormatter pattern. default: \${DEFAULT-VALUE}"])
   var format: String = "uuuu-MM-dd'T'hh:mm:ss.nX"
 
   @Suppress("RemoveExplicitTypeArguments")
@@ -45,6 +48,29 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
             onFailure = { Either.left("${it.message}") }
         )
       }
+
+  @CommandLine.Option(
+      names = ["-a", "--add", "--add-duration"],
+      description = [
+        "Add duration to instant. The format is 'PnDTnHnMn.nS'.",
+        "The 'P' is fixed char.",
+        "The 'nD' means days.",
+        "The 'T' is fixed char required if inputting times.",
+        "The 'nH' means hours.",
+        "The 'nM' means minutes.",
+        "The 'n.nS' means seconds and fractional seconds. The fractional seconds is optional.",
+        "default: ''(empty)"
+      ]
+  )
+  var duration: String = ""
+
+  internal fun duration(): Either<String, Duration> =
+      if (duration.isEmpty()) Either.right(Duration.ZERO)
+      else runCatching { Duration.parse(duration) }
+          .fold(
+              onSuccess = { Either.right<String, Duration>(it) },
+              onFailure = { Either.left("${it.message}: $duration") }
+          )
 
   internal fun now() = OffsetDateTime.now(clock)
 
