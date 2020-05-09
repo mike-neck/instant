@@ -30,7 +30,7 @@ jobs:
       -
         name: calculate next version
         id: next-version
-        users: actions-ecosystem/action-bump-semver@v1
+        uses: actions-ecosystem/action-bump-semver@v1
         with:
           current_version: ${{ steps.current-version.outputs.tag }}
           level: ${{ steps.level.outputs.value }}
