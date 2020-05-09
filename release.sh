@@ -22,6 +22,6 @@ git checkout -b "release/${branch_name}" origin/master
 git commit --allow-empty -m "release/${level}"
 
 gh pr create \
-  --target master \
+  --base master \
   --title "release/${branch_name}" \
   --body "release/${branch_name}" 
