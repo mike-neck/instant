@@ -4,10 +4,7 @@ import picocli.CommandLine
 import java.time.Clock
 import java.time.Duration
 import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.*
-
-typealias Formatter = (OffsetDateTime) -> Either<String, String>
 
 @CommandLine.Command(
     name = "instant", 
@@ -46,24 +43,7 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
   var format: String = "uuuu-MM-dd'T'hh:mm:ss.nX"
 
   @Suppress("RemoveExplicitTypeArguments")
-  internal fun formatter(): Either<String, Formatter> =
-      when (format.toLowerCase()) {
-        "unix" -> Either.right { dateTime: OffsetDateTime ->
-          Either.right<String, String>("${dateTime.toInstant().toEpochMilli()}") }
-        else -> runCatching {
-          DateTimeFormatter.ofPattern(format)
-        }.fold(
-            onSuccess = { formatter ->
-              Either.right<String, Formatter> { dateTime: OffsetDateTime ->
-                runCatching { dateTime.format(formatter) }
-                    .fold(
-                        onSuccess = { Either.right(it) },
-                        onFailure = { Either.left("${it.message}") }
-                    )}
-            },
-            onFailure = { Either.left("${it.message}") }
-        )
-      }
+  internal fun formatter(): Either<String, Formatter> = Formatter.parse(format)
 
   @CommandLine.Option(
       names = ["-a", "--add", "--add-duration"],

@@ -53,6 +53,13 @@ sealed class Either<L: Any, R: Any> {
   }
 }
 
+fun <R: Any> trying(operation: () -> R): Either<Throwable, R> =
+    runCatching(operation)
+        .fold(
+            onSuccess = { Either.right(it) },
+            onFailure = { exception: Throwable -> Either.left(exception) }
+        )
+
 internal data class Right<L: Any, R: Any>(val value: R): Either<L, R>() {
   override fun <T : Any> map(mapping: (R) -> T): Either<L, T> = Right(mapping(value))
 
