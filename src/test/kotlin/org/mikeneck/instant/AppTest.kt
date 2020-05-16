@@ -128,3 +128,10 @@ by Given(
     .Then("results 1", { _, exit ->
       exit shouldBe 1
     })
+
+    .When("run it with format unix", { commandLine -> 
+      commandLine.execute("-f", "unix")
+    })
+    .Then("results 0", { _, exit ->
+      exit shouldBe 0
+    })
