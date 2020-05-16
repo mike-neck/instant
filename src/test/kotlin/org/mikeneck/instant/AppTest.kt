@@ -9,7 +9,8 @@ import run.ktcheck.Given
 import run.ktcheck.KtCheck
 import run.ktcheck.assertion.NoDep.should
 import run.ktcheck.assertion.NoDep.shouldBe
-import run.ktcheck.assertion.NoDep.shouldNotBe
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
@@ -135,3 +136,76 @@ by Given(
     .Then("results 0", { _, exit ->
       exit shouldBe 0
     })
+
+class AppOutTest(
+    private val offsetDateTime: OffsetDateTime,
+    private val stdErr: PrintStream,
+    private val stdOut: PrintStream,
+    private val err: ByteArrayOutputStream = ByteArrayOutputStream(),
+    private val out: ByteArrayOutputStream = ByteArrayOutputStream()
+) {
+
+  init {
+    System.setOut(PrintStream(out))
+    System.setErr(PrintStream(err))
+  }
+
+  fun recoverOutput() =
+      System.setErr(this.stdErr)
+          .also { System.setOut(this.stdOut) }
+
+  fun clock(): Clock = Clock.fixed(offsetDateTime.toInstant(), ZoneId.of("UTC"))
+
+  fun standardOut(): String = out.toString(Charsets.UTF_8)
+
+  fun standardError(): String = err.toString(Charsets.UTF_8)
+
+  object AllTests: KtCheck
+  by Given(
+      description = "Create App with fixed clock(2006-01-02T15:04:05.0Z)",
+      before = { AppOutTest(
+          OffsetDateTime.of(
+              LocalDate.of(2006, 1, 2),
+              LocalTime.of(15, 4, 5), 
+              ZoneOffset.UTC),
+          System.err,
+          System.out
+      ) },
+      after = { 
+        System.setErr(this.stdErr)
+        System.setOut(this.stdOut)
+      },
+      action = { CommandLine(App(this.clock())) }
+  )
+      .When("run it without param", { it.execute() })
+      .Then("output is 2006-01-02T15:04:05.0Z\\n", { _, _ ->
+        this.standardOut() shouldBe "2006-01-02T15:04:05.0Z\n"
+      })
+      .When("run it with param[-f unix]", { commandLine -> 
+        commandLine.execute("-f", "unix")
+      })
+      .Then("output is 1136214245000\\n", { _, _ ->
+        standardOut() shouldBe "1136214245000\n"
+      })
+      .When("run it with param[-f uuuuMMddX]", { commandLine -> 
+        commandLine.execute("-f", "uuuuMMddX")
+      })
+      .Then("output is 20060102Z\\n", { _, _ ->
+        standardOut() shouldBe "20060102Z\n"
+      })
+      .When("run it with param[-a P1D]", { commandLine -> 
+        commandLine.execute("-a", "P1D")
+      })
+      .Then("output is 2006-01-03T15:04:05.0Z\\n", { _, _ ->
+        standardOut() shouldBe "2006-01-03T15:04:05.0Z\n"
+      })
+      .When("run it with invalid param[--force]", { commandLine -> 
+        commandLine.execute("--force")
+      })
+      .Then("error output", { _, _ ->
+        standardError() shouldBe """
+          |Unknown option: '--force'
+          |Possible solutions: --format
+          |""".trimMargin()
+      })
+}

@@ -41,7 +41,7 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
       names = ["-f", "--format"],
       description = [
         "Specifies output format. Available values are 'unix' or DateTimeFormatter pattern. default: \${DEFAULT-VALUE}"])
-  var format: String = "uuuu-MM-dd'T'hh:mm:ss.nX"
+  var format: String = "uuuu-MM-dd'T'HH:mm:ss.nX"
 
   @Suppress("RemoveExplicitTypeArguments")
   internal fun formatter(): Either<String, Formatter> = Formatter.parse(format)
