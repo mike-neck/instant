@@ -1,18 +1,3 @@
-/*
- * Copyright 2020 Shinya Mochida
- * 
- * Licensed under the Apache License,Version2.0(the"License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing,software
- * Distributed under the License is distributed on an"AS IS"BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.mikeneck.instant
 
 /**
@@ -52,6 +37,13 @@ sealed class Either<L: Any, R: Any> {
     fun <L: Any, R: Any> left(value: L): Either<L, R> = Left(value)
   }
 }
+
+fun <R: Any> trying(operation: () -> R): Either<Throwable, R> =
+    runCatching(operation)
+        .fold(
+            onSuccess = { Either.right(it) },
+            onFailure = { exception: Throwable -> Either.left(exception) }
+        )
 
 internal data class Right<L: Any, R: Any>(val value: R): Either<L, R>() {
   override fun <T : Any> map(mapping: (R) -> T): Either<L, T> = Right(mapping(value))

@@ -11,12 +11,12 @@ object EitherAssert {
         override fun matches(actual: Either<L, R>): Boolean = actual is Right
       }
 
-  fun <T: Any> beRight(value: T): Matcher<Either<String, T>> =
-      object : MatcherSupport<Either<String, T>>() {
+  fun <R: Any, T: R> beRight(value: T): Matcher<Either<String, R>> =
+      object : MatcherSupport<Either<String, R>>() {
         override val expectedValue: Any get() = "Right with value[$value]"
 
-        override fun matches(actual: Either<String, T>): Boolean =
-            actual == Either.right<String, T>(value)
+        override fun matches(actual: Either<String, R>): Boolean =
+            actual == Either.right<String, R>(value)
       }
 
   fun <L : Any, R : Any> beLeft(): Matcher<Either<L, R>> =
