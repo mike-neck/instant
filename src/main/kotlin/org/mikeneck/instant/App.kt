@@ -28,10 +28,11 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
     internal fun <L: Any, R: Any, N: Any> Either<L, (R) -> Either<L, N>>.flatten(): (R) -> Either<L, N> =
         { right: R -> this.flatMap { mapping -> mapping(right) } }
 
-    internal operator fun <L: Any, R: Any, M: Any, N: Any> Either<L, (R) -> Either<L, M>>.plus(next: Either<L, (M) -> Either<L, N>> ): Either<L, (R) -> Either<L, N>> =
-        this.flatMap { function: (R) -> Either<L, M> -> 
-          next.map { nextFunction: (M) -> Either<L, N> ->
-            { right: R -> function(right).flatMap(nextFunction) }
+    internal operator fun <L: Any, R: Any, M: Any, N: Any, F: (R) -> Either<L, M>, G: (M) -> Either<L, N>>
+        Either<L, F>.plus(next: Either<L, G>): Either<L, (R) -> Either<L, N>> =
+        this.flatMap { function: F -> 
+          next.map { nextFun: G ->
+            { right: R -> function(right).flatMap(nextFun) }
           }
         }
   }
@@ -61,21 +62,10 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
   var duration: String = ""
 
   @Suppress("RemoveExplicitTypeArguments")
-  internal fun duration(): Either<String, Duration> =
-      if (duration.isEmpty()) Either.right(Duration.ZERO)
-      else runCatching { Duration.parse(duration) }
-          .fold(
-              onSuccess = { Either.right<String, Duration>(it) },
-              onFailure = { Either.left("${it.message}: $duration") }
-          )
-
-  @Suppress("RemoveExplicitTypeArguments")
-  private val Either<String, Duration>.mapper: Either<String, (OffsetDateTime) -> Either<String, OffsetDateTime>> get() =
-    this.map { duration -> { offsetDateTime: OffsetDateTime -> 
-      Either.right<String, OffsetDateTime>(offsetDateTime + duration) } }
+  internal fun duration(): Either<String, Adjustment> = Adjustment.parse(duration)
 
   private val composedFunction: (OffsetDateTime) -> Either<String, String> get() =
-      (duration().mapper + formatter()).flatten()
+      (duration() + formatter()).flatten()
 
   internal fun now() = OffsetDateTime.now(clock)
 
