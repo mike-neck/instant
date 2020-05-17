@@ -70,14 +70,14 @@ by Given("without --add option", { App() })
       app.duration()
     })
     .Then("it should be Right with zero duration", {  _, either ->
-      either should beRight<Adjustment, Adjustment>(DurationAdjustment(Duration.ZERO))
+      either should beRight<Adjustment>(DurationAdjustment(Duration.ZERO))
     })
 
 object DurationWithValidFormatTest: KtCheck
 by Given("valid format duration(P1DT-12H)", { App().withDuration("P1DT-12H") })
     .When("call `duration()`", { app -> app.duration() })
     .Then("it should be Right with 12 hours", { _, either ->
-      either should beRight<Adjustment, Adjustment>(DurationAdjustment(Duration.ofHours(12)))
+      either should beRight<Adjustment>(DurationAdjustment(Duration.ofHours(12)))
     })
 
 object AppNowTest : KtCheck

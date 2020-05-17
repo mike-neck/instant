@@ -11,7 +11,7 @@ object EitherAssert {
         override fun matches(actual: Either<L, R>): Boolean = actual is Right
       }
 
-  fun <R: Any, T: R> beRight(value: T): Matcher<Either<String, R>> =
+  fun <R: Any> beRight(value: R): Matcher<Either<String, R>> =
       object : MatcherSupport<Either<String, R>>() {
         override val expectedValue: Any get() = "Right with value[$value]"
 
