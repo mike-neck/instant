@@ -1,22 +1,54 @@
 name: release
 
 on:
-  push:
-    tags:
-      - "v*"
+  pull_request:
+    types: [closed]
 
 jobs:
 
   create-release:
     name: create release
     runs-on: ubuntu-18.04
-    env:
-      REF: ${{ github.ref }}
+    if: startsWith( github.event.pull_request.title , 'release' ) && github.event.pull_request.merged
 
     steps:
+      -
+        name: checkout
+        uses: actions/checkout@v2
+
+      -
+        name: calculate release level
+        id: level
+        env:
+          RELEASE_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "::set-output name=value::$(echo ${RELEASE_TITLE} | cut -d '/' -f2)"
+
+      -
+        name: current version
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: current-version
+
+      -
+        name: "calculate next version (from: ${{ steps.current-version.outputs.tag }}, with-update: ${{ steps.level.outputs.value }})"
+        id: next-version
+        uses: actions-ecosystem/action-bump-semver@v1
+        with:
+          current_version: ${{ steps.current-version.outputs.tag }}
+          level: ${{ steps.level.outputs.value }}
+
+      -
+        name: push tag
+        uses: actions-ecosystem/action-push-tag@v1
+        with:
+          tag: ${{ steps.next-version.outputs.new_version }}
+          message: "Release version ${{ steps.next-version.outputs.new_version }}"
+
       - name: project version
         id: projectVersion
-        run: echo "::set-output name=version::`echo $REF | tr '/' ' ' | awk '{print $3}'`"
+        run: echo "::set-output name=version::$(echo $NEW_VERSION)"
+        env:
+          NEW_VERSION: ${{ steps.next-version.outputs.new_version }}
 
       - name: create release
         id: release
