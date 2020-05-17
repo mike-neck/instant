@@ -70,14 +70,14 @@ by Given("without --add option", { App() })
       app.duration()
     })
     .Then("it should be Right with zero duration", {  _, either ->
-      either should beRight<Adjustment, Adjustment>(DurationAdjustment(Duration.ZERO))
+      either should beRight<Adjustment>(DurationAdjustment(Duration.ZERO))
     })
 
 object DurationWithValidFormatTest: KtCheck
 by Given("valid format duration(P1DT-12H)", { App().withDuration("P1DT-12H") })
     .When("call `duration()`", { app -> app.duration() })
     .Then("it should be Right with 12 hours", { _, either ->
-      either should beRight<Adjustment, Adjustment>(DurationAdjustment(Duration.ofHours(12)))
+      either should beRight<Adjustment>(DurationAdjustment(Duration.ofHours(12)))
     })
 
 object AppNowTest : KtCheck
@@ -130,11 +130,18 @@ by Given(
       exit shouldBe 1
     })
 
-    .When("run it with format unix", { commandLine -> 
+    .When("run it with format unix", { commandLine ->
       commandLine.execute("-f", "unix")
     })
     .Then("results 0", { _, exit ->
       exit shouldBe 0
+    })
+
+    .When("run it with invalid zone", { commandLine ->
+      commandLine.execute("-z", "Asia/Osaka")
+    })
+    .Then("results 1", { _, exit ->
+      exit shouldBe 1
     })
 
 class AppOutTest(
@@ -198,6 +205,12 @@ class AppOutTest(
       })
       .Then("output is 2006-01-03T15:04:05.0Z\\n", { _, _ ->
         standardOut() shouldBe "2006-01-03T15:04:05.0Z\n"
+      })
+      .When("run it with param[-z PST8PDT]", { commandLine -> 
+        commandLine.execute("-z", "PST8PDT")
+      })
+      .Then("output is 2006-01-02T07:04:05.0-08\\n", { _, _ ->
+        standardOut() shouldBe "2006-01-02T07:04:05.0-08\n"
       })
       .When("run it with invalid param[--force]", { commandLine -> 
         commandLine.execute("--force")

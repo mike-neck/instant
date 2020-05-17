@@ -63,8 +63,20 @@ class App(private val clock: Clock = Clock.systemUTC()) : Callable<Int> {
   @Suppress("RemoveExplicitTypeArguments")
   internal fun duration(): Either<String, Adjustment> = Adjustment.parse(duration)
 
+  @CommandLine.Option(
+      names = ["-z", "--zone", "--time-zone"],
+      description = [
+      "Specifies time-zone to show the time of instant.",
+      "Available values are integer(difference from UTC in hours), zone ids(like PST8PDT, Asia/Tokyo).",
+      "default: \${DEFAULT_VALUE}"
+      ]
+  )
+  var timeZone: String = "UTC"
+
+  private fun timeZone(): Either<String, TimeZone> = TimeZone.parse(timeZone)
+
   private val composedFunction: (OffsetDateTime) -> Either<String, String> get() =
-      (duration() + formatter()).flatten()
+      (duration() + timeZone() + formatter()).flatten()
 
   internal fun now() = OffsetDateTime.now(clock)
 
