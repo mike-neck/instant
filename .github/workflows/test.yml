@@ -17,10 +17,10 @@ jobs:
         uses: actions/checkout@v1
 
       -
-        name: setup Java
-        uses: actions/setup-java@v1.3.0
+        name: setup GraalVM
+        uses: DeLaGuardo/setup-graalvm@2.0
         with:
-          java-version: '11'
+          graalvm-version: "20.0.0.java11"
 
       -
         name: cache
@@ -41,3 +41,16 @@ jobs:
         with:
           name: test-report
           path: build/reports/tests/test
+
+      -
+        name: create native image
+        run: ./gradlew nativeImage
+
+      -
+        name: run instant as test
+        run: |
+          build/native-image/instant
+          build/native-image/instant --version
+          build/native-image/instant -f unix
+          build/native-image/instant -a PT-2H
+          build/native-image/instant -z "Asia/Tokyo"
